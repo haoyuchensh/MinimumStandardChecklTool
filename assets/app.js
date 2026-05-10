@@ -226,22 +226,10 @@ function renderChecklistStep(section) {
       </div>
 
       <div class="panel">
-        <h3 class="panel-title">Photos and notes</h3>
-        <label class="upload-box">
-          <strong>Photo upload</strong>
-          <span>Use camera or choose images</span>
-          <input id="photo-input" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" multiple />
-        </label>
-        <div class="photo-grid">
-          ${response.photos.map((photo) => renderPhoto(photo)).join("")}
-        </div>
-        <label class="field" style="margin-top: 16px;">
+        <h3 class="panel-title">Notes</h3>
+        <label class="field">
           <span>Notes</span>
           <textarea id="notes" rows="4" placeholder="Record observations, room names, fixture details or uncertainty.">${escapeHtml(response.notes)}</textarea>
-        </label>
-        <label class="field" style="margin-top: 14px;">
-          <span>Suggested repair/action</span>
-          <textarea id="suggested-action" rows="3" placeholder="Example: Book licensed electrician to inspect switchboard.">${escapeHtml(response.suggestedAction)}</textarea>
         </label>
       </div>
     </section>
@@ -265,25 +253,9 @@ function renderChecklistStep(section) {
       render();
     });
   });
-  nodes.screen.querySelectorAll("[data-remove-photo]").forEach((button) => {
-    button.addEventListener("click", () => {
-      response.photos = response.photos.filter((photo) => photo.id !== button.dataset.removePhoto);
-      render();
-    });
-  });
 
   document.getElementById("notes").addEventListener("input", (event) => {
     response.notes = event.target.value;
-  });
-  document.getElementById("suggested-action").addEventListener("input", (event) => {
-    response.suggestedAction = event.target.value;
-  });
-  document.getElementById("photo-input").addEventListener("change", async (event) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-    const photos = await Promise.all(files.map(preparePhoto));
-    response.photos = response.photos.concat(photos);
-    render();
   });
 }
 
@@ -298,18 +270,6 @@ function renderQuestion(sectionId, response, question, index) {
             return `<button class="choice ${selected}" data-section-id="${sectionId}" data-question-index="${index}" data-answer="${option.value}" type="button">${option.label}</button>`;
           })
           .join("")}
-      </div>
-    </div>
-  `;
-}
-
-function renderPhoto(photo) {
-  return `
-    <div class="photo-tile">
-      <img src="${escapeAttribute(photo.dataUrl)}" alt="${escapeAttribute(photo.name)}" />
-      <div class="photo-tile-footer">
-        <span class="photo-name">${escapeHtml(photo.name)}</span>
-        <button class="remove-photo" data-remove-photo="${escapeAttribute(photo.id)}" type="button" aria-label="Remove ${escapeAttribute(photo.name)}">x</button>
       </div>
     </div>
   `;
@@ -352,11 +312,11 @@ function renderSummary() {
       </div>
 
       <div class="panel">
-        <h3 class="panel-title">Repair/action list</h3>
+        <h3 class="panel-title">Items needing review</h3>
         ${
-          summary.repairItems.length
-            ? `<div class="repair-list">${summary.repairItems.map(renderRepairItem).join("")}</div>`
-            : `<p class="panel-subtitle">No repair actions have been recorded.</p>`
+          summary.reviewItems.length
+            ? `<div class="review-list">${summary.reviewItems.map(renderReviewItem).join("")}</div>`
+            : `<p class="panel-subtitle">No review items have been recorded.</p>`
         }
       </div>
 
@@ -369,7 +329,7 @@ function renderSummary() {
 
       <div class="panel">
         <h3 class="panel-title">PDF report</h3>
-        <p class="panel-subtitle">Generate a printable report with notes, photos, repair actions and signature area.</p>
+        <p class="panel-subtitle">Generate a printable report with notes, checklist results and signature area.</p>
         <div class="pdf-actions">
           <button class="button button-primary" id="generate-pdf" type="button">${app.isGeneratingPdf ? "Generating..." : "Generate PDF"}</button>
           <button class="button button-dark" id="download-pdf" type="button">Download PDF</button>
@@ -401,15 +361,15 @@ function renderDetail(label, value) {
   `;
 }
 
-function renderRepairItem(item) {
+function renderReviewItem(item) {
   return `
-    <article class="repair-item">
+    <article class="review-item">
       <div class="badge-row">
         <h4>${escapeHtml(item.title)}</h4>
         <span class="badge ${item.priority.toLowerCase()}">${escapeHtml(item.priority)}</span>
       </div>
       <p><strong>${item.assessment ? assessmentLabels[item.assessment] : "Not assessed"}</strong></p>
-      <p>${escapeHtml(item.action || item.notes || "Action to be confirmed.")}</p>
+      <p>${escapeHtml(item.notes || "No notes recorded.")}</p>
     </article>
   `;
 }
@@ -466,8 +426,6 @@ function createEmptyResponse(section) {
     assessment: "",
     priority: "Medium",
     notes: "",
-    suggestedAction: "",
-    photos: [],
     questionAnswers
   };
 }
@@ -487,8 +445,9 @@ function mergeResponses(savedResponses) {
         section.id,
         {
           ...initial[section.id],
-          ...saved,
-          photos: Array.isArray(saved.photos) ? saved.photos : [],
+          assessment: saved.assessment || initial[section.id].assessment,
+          priority: saved.priority || initial[section.id].priority,
+          notes: saved.notes || initial[section.id].notes,
           questionAnswers: {
             ...initial[section.id].questionAnswers,
             ...(saved.questionAnswers || {})
@@ -541,7 +500,7 @@ function resetDraft() {
 }
 
 function calculateSummary() {
-  const repairItems = app.checklist.flatMap((section) => {
+  const reviewItems = app.checklist.flatMap((section) => {
     const response = app.responses[section.id];
     if (!response) return [];
     const urgentIssue =
@@ -551,8 +510,7 @@ function calculateSummary() {
     const shouldList =
       response.assessment === "fail" ||
       response.assessment === "professional" ||
-      urgentIssue ||
-      response.suggestedAction.trim().length > 0;
+      urgentIssue;
 
     return shouldList
       ? [
@@ -561,7 +519,6 @@ function calculateSummary() {
             title: section.title,
             assessment: response.assessment,
             priority: response.priority,
-            action: response.suggestedAction.trim(),
             notes: response.notes.trim()
           }
         ]
@@ -602,60 +559,8 @@ function calculateSummary() {
     urgentCount,
     needsProfessionalCount,
     unansweredCount,
-    repairItems
+    reviewItems
   };
-}
-
-async function preparePhoto(file) {
-  const rawDataUrl = await readFileAsDataUrl(file);
-
-  try {
-    const image = await loadImage(rawDataUrl);
-    const scale = Math.min(1, 1400 / Math.max(image.width, image.height));
-    const width = Math.max(1, Math.round(image.width * scale));
-    const height = Math.max(1, Math.round(image.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    context.drawImage(image, 0, 0, width, height);
-    return {
-      id: createId(),
-      name: file.name,
-      dataUrl: canvas.toDataURL("image/jpeg", 0.78),
-      size: file.size
-    };
-  } catch {
-    return {
-      id: createId(),
-      name: file.name,
-      dataUrl: rawDataUrl,
-      size: file.size
-    };
-  }
-}
-
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
-function loadImage(dataUrl) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error("Could not read image"));
-    image.src = dataUrl;
-  });
-}
-
-function createId() {
-  if (crypto.randomUUID) return crypto.randomUUID();
-  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 async function buildPdf() {
@@ -799,17 +704,17 @@ function createPdfDocument(summary) {
   write(`Urgent items: ${summary.urgentCount}`);
   write(`Unanswered sections: ${summary.unansweredCount}`);
 
-  if (summary.repairItems.length > 0) {
+  if (summary.reviewItems.length > 0) {
     divider();
-    write("Repair / action summary", { size: 16, style: "bold", gap: 12 });
-    summary.repairItems.forEach((item, index) => {
+    write("Items needing review", { size: 16, style: "bold", gap: 12 });
+    summary.reviewItems.forEach((item, index) => {
       write(
         `${index + 1}. ${item.title} - ${item.priority} - ${
           item.assessment ? assessmentLabels[item.assessment] : "Not assessed"
         }`,
         { style: "bold", gap: 4 }
       );
-      write(item.action || item.notes || "Action to be confirmed.", {
+      write(item.notes || "No notes recorded.", {
         indent: 12,
         color: [71, 85, 105]
       });
@@ -842,23 +747,6 @@ function createPdfDocument(summary) {
     });
     write(`Priority: ${response.priority || "Medium"}`);
     write(`Notes: ${response.notes || "None"}`);
-    write(`Suggested repair/action: ${response.suggestedAction || "None"}`);
-
-    if (response.photos.length) {
-      write("Uploaded photos", { size: 12, style: "bold", gap: 10 });
-      response.photos.forEach((photo) => {
-        ensureSpace(144);
-        try {
-          doc.addImage(photo.dataUrl, "JPEG", margin, y, 160, 110);
-          doc.setFontSize(8);
-          doc.setTextColor(71, 85, 105);
-          doc.text(photo.name.slice(0, 48), margin, y + 124);
-          y += 142;
-        } catch {
-          write(`Photo could not be embedded: ${photo.name}`, { color: [153, 27, 27] });
-        }
-      });
-    }
   });
 
   addFooter();

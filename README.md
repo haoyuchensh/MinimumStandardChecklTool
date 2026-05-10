@@ -1,6 +1,6 @@
 # Rental Minimum Standards Checklist VIC
 
-Static, mobile-first web app for Victorian landlords and property managers to complete a rental minimum standards self-check, record notes and photos, save a draft locally, and download a PDF report.
+Static, mobile-first web app for Victorian landlords and property managers to complete a rental minimum standards self-check, record notes, save a draft locally, and download a PDF report.
 
 This version is designed for GitHub Pages. There is no build step.
 
@@ -23,10 +23,10 @@ The app deliberately uses wording such as:
 - 15 Victorian rental minimum standards checklist sections
 - Official requirement summary, plain-English guidance, common issues and self-check questions for every section
 - Assessment options: Appears compliant, Needs review, Not applicable, Professional check recommended
-- Notes, suggested repair/action, priority selector and photo upload per section
+- Notes and priority selector per section
 - Browser local draft save
 - Smart summary with ready/not-ready result logic
-- Downloadable and printable PDF report with photos, notes, repair list, signature area and disclaimer
+- Downloadable and printable PDF report with notes, items needing review, signature area and disclaimer
 - Reusable checklist data in `data/checklist.json`
 
 ## Static File Structure
@@ -99,7 +99,6 @@ Always verify the current rules before relying on a report for a real property d
 ## Future Extension Points
 
 - Chinese language support
-- AI photo analysis
 - Multiple property management
 - Annual compliance reminders
 - Smoke alarm records
