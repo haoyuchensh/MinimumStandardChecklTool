@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en-AU">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="description"
+      content="Mobile-first self-check for Victorian rental minimum standards with notes and PDF reports."
+    />
+    <title>Rental Minimum Standards Checklist VIC</title>
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="topbar-inner">
+          <div class="title-block">
+            <p class="app-kicker">Rental Minimum Standards Checklist VIC</p>
+            <h1 id="step-title">Property details</h1>
+          </div>
+          <div class="progress-meta">
+            <span id="step-count">Step 1 of 17</span>
+            <span id="section-count">0/15 sections assessed</span>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <div class="progress-fill" id="progress-fill"></div>
+          </div>
+        </div>
+      </header>
+
+      <main class="page">
+        <section class="notice" aria-label="Self-check disclaimer">
+          <strong>Self-check only.</strong>
+          This tool helps record observations against Victorian rental minimum standards. It does
+          not provide legal advice, certification or a compliance determination.
+        </section>
+
+        <div id="app-screen" aria-live="polite"></div>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Checklist navigation">
+        <div class="bottom-nav-inner">
+          <button class="button button-light" id="back-button" type="button">
+            Back
+          </button>
+          <button class="button button-primary" id="next-button" type="button">
+            Continue
+          </button>
+        </div>
+      </nav>
+    </div>
+
+    <script src="assets/checklist-data.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+    <script src="assets/app.js"></script>
+  </body>
+</html>
